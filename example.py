@@ -1,6 +1,8 @@
 import sys
 import logging
-from scyllacache.cache import Cache
+import uuid
+
+from scyllacache.cache import session, Cache
 
 
 logger = logging.getLogger(__name__)
@@ -9,15 +11,18 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def main():
-    keys = ['tm{i}'.format(i=i) for i in range(1, 5)]
+    keyspace = 'cache'
+    keys = ['k-{i}'.format(i=i) for i in range(0, 2)]
 
-    with Cache(nodes=['localhost'], logger=logger) as cache:
+    with session(nodes=['localhost'], keyspace=keyspace) as sess:
+        cache = Cache(session=sess, ttl=10, logger=logger)
+
         for key in keys:
             res, found = cache.get(key)
             if found:
                 logger.info("[{key}] {res}".format(key=key, res=res))
             else:
-                logger.warning("[{key}] {res}".format(key=key, res=res))
+                cache.write(key=key, val=str(uuid.uuid4()))
 
 
 if __name__ == "__main__":
