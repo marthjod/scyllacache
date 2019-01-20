@@ -1,16 +1,29 @@
 import sys
 import logging
 import uuid
+import pickle
+import time
+import random
 
 from scyllacache.cache import session, Cache
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-logger.addHandler(logging.StreamHandler(sys.stdout))
+class Value(object):
+    """example class representing pickable objects to be stored as cache values"""
+    def __init__(self, id):
+        self.id = id
+        self.uuid = uuid.uuid4()
+
+    def pickle(self):
+        return str(pickle.dumps(self))
+
+    @staticmethod
+    def calculate():
+        """mimicks expensive operation"""
+        time.sleep(random.randrange(1, 5))
 
 
-def main():
+def main(logger):
     keyspace = 'cache'
     keys = ['k-{i}'.format(i=i) for i in range(0, 2)]
 
@@ -20,10 +33,18 @@ def main():
         for key in keys:
             res, found = cache.get(key)
             if found:
-                logger.info("[{key}] {res}".format(key=key, res=res))
+                logger.info("found {key}={res}".format(key=key, res=res))
             else:
-                cache.write(key=key, val=str(uuid.uuid4()))
+                logger.info("key {key} not found, calculating value".format(key=key))
+                v = Value(id=key)
+                v.calculate()
+                p = v.pickle()
+                logger.info("writing {key}={val} to cache".format(key=key, val=p))
+                cache.write(key=key, val=p)
 
 
 if __name__ == "__main__":
-    main()
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(logging.StreamHandler(sys.stdout))
+    main(logger)
