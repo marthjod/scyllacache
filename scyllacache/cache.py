@@ -1,3 +1,5 @@
+import codecs
+import pickle
 from contextlib import contextmanager
 from cassandra.cluster import Cluster
 from cassandra.query import named_tuple_factory
@@ -31,7 +33,8 @@ class Cache(object):
         for row in res:
             if row.val:
                 # return value of first item
-                return row.val, True
+                v = self._unpickle(row.val)
+                return v, True
             # if row.val unusable
             return None, False
         # if res iterator empty
@@ -41,7 +44,16 @@ class Cache(object):
         self._write(key, val, self.ttl)
 
     def _write(self, key, val, ttl):
-        self.session.execute(self.query_insert, [key, val, ttl])
+        v = self._pickle(val)
+        self.session.execute(self.query_insert, [key, v, ttl])
+
+    @staticmethod
+    def _pickle(val):
+        return codecs.encode(pickle.dumps(val), "base64").decode()
+
+    @staticmethod
+    def _unpickle(p):
+        return pickle.loads(codecs.decode(p.encode(), "base64"))
 
 
 @contextmanager

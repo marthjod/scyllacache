@@ -15,13 +15,6 @@ class Value(object):
         self.id = id
         self.uuid = str(uuid.uuid4())
 
-    def pickle(self):
-        return codecs.encode(pickle.dumps(self), "base64").decode()
-
-    @staticmethod
-    def unpickle(p):
-        return pickle.loads(codecs.decode(p.encode(), "base64"))
-
     @staticmethod
     def calculate():
         """mimicks expensive operation"""
@@ -45,15 +38,13 @@ def main(logger):
 
         res, found = cache.get(key)
         if found:
-            v = Value.unpickle(res)
-            logger.info("found: %s" % v)
+            logger.info("found: %s" % res)
         else:
             logger.info("key {key} not found, calculating value".format(key=key))
             v = Value(id=key)
             v.calculate()
-            p = v.pickle()
             logger.info("writing %s to cache" % v)
-            cache.write(key=key, val=p)
+            cache.write(key=key, val=v)
 
 
 if __name__ == "__main__":
