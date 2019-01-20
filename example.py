@@ -3,6 +3,7 @@ import logging
 import uuid
 import time
 import random
+import click
 
 from scyllacache.cache import session, Cache
 
@@ -26,12 +27,18 @@ class Value(object):
         return "<{id}={uuid}>".format(id=self.id, uuid=self.uuid)
 
 
-def main(logger):
-    keyspace = 'cache'
+@click.option('--keyspace', required=True, help='Keyspace')
+@click.option('--nodes', multiple=True, required=True, help='Scylla nodes/contact points (without port)')
+@click.command()
+def cli(keyspace, nodes):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(logging.StreamHandler(sys.stdout))
+
     key = 'k{i}'.format(i=random.randrange(1, 5))
     logger.info("request for key {key}".format(key=key))
 
-    with session(nodes=['localhost'], keyspace=keyspace) as sess:
+    with session(nodes=nodes, keyspace=keyspace) as sess:
         cache = Cache(session=sess, ttl=10, logger=logger)
 
         res, found = cache.get(key)
@@ -45,8 +52,5 @@ def main(logger):
             cache.write(key=key, val=v)
 
 
-if __name__ == "__main__":
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(logging.StreamHandler(sys.stdout))
-    main(logger)
+if __name__ == '__main__':
+    cli()

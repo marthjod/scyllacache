@@ -6,15 +6,15 @@ from cassandra.query import named_tuple_factory
 
 
 # TODO make table name configurable
-QUERY_GET = 'SELECT val FROM cache WHERE key=? LIMIT 1'
-QUERY_INSERT = 'INSERT INTO cache (key, val) VALUES (?, ?) USING TTL ?'
-
 
 class Cache(object):
-    def __init__(self, session, keyspace='cache', ttl=86400, logger=None):
+    QUERY_GET = 'SELECT val FROM {table} WHERE key=? LIMIT 1'
+    QUERY_INSERT = 'INSERT INTO {table} (key, val) VALUES (?, ?) USING TTL ?'
+
+    def __init__(self, session, table='cache', ttl=86400, logger=None):
         self.logger = logger
         self.session = session
-        self.keyspace = keyspace
+        self.table = table
         try:
             self.ttl = int(ttl)
         except ValueError:
@@ -22,11 +22,14 @@ class Cache(object):
 
         self.session.row_factory = named_tuple_factory
 
-        self.query_get = self.session.prepare(QUERY_GET)
+        self.QUERY_GET = self.QUERY_GET.format(table=self.table)
+        self.QUERY_INSERT = self.QUERY_INSERT.format(table=self.table)
+
+        self.query_get = self.session.prepare(self.QUERY_GET)
         self.query_get.fetch_size = 1
         self.query_get.is_idempotent = True
 
-        self.query_insert = self.session.prepare(QUERY_INSERT)
+        self.query_insert = self.session.prepare(self.QUERY_INSERT)
 
     def get(self, key):
         res = self.session.execute(self.query_get, [key])
