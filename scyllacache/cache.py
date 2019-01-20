@@ -19,7 +19,11 @@ class Cache(object):
             raise
 
         self.session.row_factory = named_tuple_factory
+
         self.query_get = self.session.prepare(QUERY_GET)
+        self.query_get.fetch_size = 1
+        self.query_get.is_idempotent = True
+
         self.query_insert = self.session.prepare(QUERY_INSERT)
 
     def get(self, key):
