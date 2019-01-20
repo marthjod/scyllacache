@@ -1,10 +1,8 @@
 import sys
 import logging
 import uuid
-import pickle
 import time
 import random
-import codecs
 
 from scyllacache.cache import session, Cache
 
