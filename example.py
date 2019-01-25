@@ -9,8 +9,8 @@ from scyllacache.cache import session, Cache
 from prometheus_client import start_http_server
 
 
-class Pickable(object):
-    """example class representing pickable objects to be stored as cache values"""
+class Picklable(object):
+    """example class representing picklable objects to be stored as cache values"""
     def __init__(self, id):
         self.id = id
         self.uuid = uuid.uuid4()
@@ -46,7 +46,7 @@ def cli(keyspace, nodes):
             if found:
                 print("found: %s" % res)
             else:
-                p = Pickable(id=key)
+                p = Picklable(id=key)
                 p.calculate()
                 print(" writing new %s to cache" % p)
                 cache.put(key=key, picklable=p)
