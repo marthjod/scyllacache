@@ -51,7 +51,6 @@ class Cache(object):
         self.backend_read_latency = self.backend_latency.labels('read')
         self.backend_write_latency = self.backend_latency.labels('write')
 
-
     def get(self, key):
         with self.cache_get_latency.time():
             res = self._fetch(key)
