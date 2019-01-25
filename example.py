@@ -6,6 +6,8 @@ import click
 
 from scyllacache.cache import session, Cache
 
+from prometheus_client import start_http_server
+
 
 class Pickable(object):
     """example class representing pickable objects to be stored as cache values"""
@@ -34,7 +36,7 @@ def cli(keyspace, nodes):
 
         cache = Cache(session=sess, ttl=5)
 
-        for c in range(20):
+        for c in range(200000):
             c += 1
 
             key = 'k{i}'.format(i=random.randrange(1, 5))
@@ -47,7 +49,7 @@ def cli(keyspace, nodes):
                 p = Pickable(id=key)
                 p.calculate()
                 print(" writing new %s to cache" % p)
-                cache.put(key=key, pickable=p)
+                cache.put(key=key, picklable=p)
 
         write("closing session... ")
 
@@ -60,4 +62,5 @@ def write(s):
 
 
 if __name__ == '__main__':
+    start_http_server(8000)
     cli()

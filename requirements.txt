@@ -1,2 +1,3 @@
 cassandra-driver
 click
+prometheus_client
