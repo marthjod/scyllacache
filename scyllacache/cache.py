@@ -5,14 +5,11 @@ from cassandra.cluster import Cluster
 from cassandra.query import named_tuple_factory
 
 
-# TODO make table name configurable
-
 class Cache(object):
-    QUERY_GET = 'SELECT val FROM {table} WHERE key=? LIMIT 1'
-    QUERY_INSERT = 'INSERT INTO {table} (key, val) VALUES (?, ?) USING TTL ?'
+    query_get_tpl = 'SELECT val FROM {table} WHERE key=? LIMIT 1'
+    query_insert_tpl = 'INSERT INTO {table} (key, val) VALUES (?, ?) USING TTL ?'
 
-    def __init__(self, session, table='cache', ttl=86400, logger=None):
-        self.logger = logger
+    def __init__(self, session, table='cache', ttl=86400):
         self.session = session
         self.table = table
         try:
@@ -22,14 +19,11 @@ class Cache(object):
 
         self.session.row_factory = named_tuple_factory
 
-        self.QUERY_GET = self.QUERY_GET.format(table=self.table)
-        self.QUERY_INSERT = self.QUERY_INSERT.format(table=self.table)
-
-        self.query_get = self.session.prepare(self.QUERY_GET)
+        self.query_get = self.session.prepare(self.query_get_tpl.format(table=self.table))
         self.query_get.fetch_size = 1
         self.query_get.is_idempotent = True
 
-        self.query_insert = self.session.prepare(self.QUERY_INSERT)
+        self.query_insert = self.session.prepare(self.query_insert_tpl.format(table=self.table))
 
     def get(self, key):
         res = self.session.execute(self.query_get, [key])
@@ -43,16 +37,16 @@ class Cache(object):
         # if res iterator empty
         return None, False
 
-    def write(self, key, val):
-        self._write(key, val, self.ttl)
+    def put(self, key, pickable):
+        self._write(key, pickable, self.ttl)
 
-    def _write(self, key, val, ttl):
-        v = self._pickle(val)
+    def _write(self, key, pickable, ttl):
+        v = self._pickle(pickable)
         self.session.execute(self.query_insert, [key, v, ttl])
 
     @staticmethod
-    def _pickle(val):
-        return codecs.encode(pickle.dumps(val), "base64").decode()
+    def _pickle(pickable):
+        return codecs.encode(pickle.dumps(pickable), "base64").decode()
 
     @staticmethod
     def _unpickle(p):

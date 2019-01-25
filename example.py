@@ -1,5 +1,4 @@
 import sys
-import logging
 import uuid
 import time
 import random
@@ -8,20 +7,18 @@ import click
 from scyllacache.cache import session, Cache
 
 
-class Value(object):
+class Pickable(object):
     """example class representing pickable objects to be stored as cache values"""
     def __init__(self, id):
         self.id = id
-        self.uuid = str(uuid.uuid4())
+        self.uuid = uuid.uuid4()
 
-    @staticmethod
-    def calculate():
+    def calculate(self):
         """mimicks expensive operation"""
-        for _ in range(random.randrange(1, 5)):
-            sys.stdout.write('.')
-            sys.stdout.flush()
+        for c in range(random.randrange(1, 3)):
+            _ = str(self.uuid)[c]
+            write('.')
             time.sleep(1)
-        print()
 
     def __str__(self):
         return "<{id}={uuid}>".format(id=self.id, uuid=self.uuid)
@@ -31,25 +28,35 @@ class Value(object):
 @click.option('--nodes', multiple=True, required=True, help='Scylla nodes/contact points (without port)')
 @click.command()
 def cli(keyspace, nodes):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    logger.addHandler(logging.StreamHandler(sys.stdout))
-
-    key = 'k{i}'.format(i=random.randrange(1, 5))
-    logger.info("request for key {key}".format(key=key))
-
+    write("opening session... ")
     with session(nodes=nodes, keyspace=keyspace) as sess:
-        cache = Cache(session=sess, ttl=10, logger=logger)
+        print("done")
 
-        res, found = cache.get(key)
-        if found:
-            logger.info("found: %s" % res)
-        else:
-            logger.info("key {key} not found, calculating value".format(key=key))
-            v = Value(id=key)
-            v.calculate()
-            logger.info("writing %s to cache" % v)
-            cache.write(key=key, val=v)
+        cache = Cache(session=sess, ttl=5)
+
+        for c in range(20):
+            c += 1
+
+            key = 'k{i}'.format(i=random.randrange(1, 5))
+            write("[{c}] request for key {key}, ".format(c=c, key=key))
+
+            res, found = cache.get(key)
+            if found:
+                print("found: %s" % res)
+            else:
+                p = Pickable(id=key)
+                p.calculate()
+                print(" writing new %s to cache" % p)
+                cache.put(key=key, pickable=p)
+
+        write("closing session... ")
+
+    print("done")
+
+
+def write(s):
+    sys.stdout.write(s)
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':
