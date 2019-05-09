@@ -64,22 +64,22 @@ class Cache(object):
             # if res iterator empty
             return None, False
 
-    def put(self, key, picklable):
+    def put(self, key, value):
         with self.cache_put_latency.time():
-            self._write(key, picklable, self.ttl)
+            self._write(key, value, self.ttl)
 
     def _fetch(self, key):
         with self.backend_read_latency.time():
             return self.session.execute(self.query_get, [key])
 
-    def _write(self, key, picklable, ttl):
-        v = self._pickle(picklable)
+    def _write(self, key, value, ttl):
+        # v = self._pickle(value)
         with self.backend_write_latency.time():
-            self.session.execute(self.query_insert, [key, v, ttl])
+            self.session.execute(self.query_insert, [key, value, ttl])
 
-    def _pickle(self, picklable):
+    def _pickle(self, value):
         with self.pickle_latency.time():
-            return codecs.encode(pickle.dumps(picklable), "base64").decode()
+            return codecs.encode(pickle.dumps(value), "base64").decode()
 
     def _unpickle(self, p):
         with self.unpickle_latency.time():
