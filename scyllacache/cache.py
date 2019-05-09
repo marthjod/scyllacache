@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from cassandra.cluster import Cluster
 from cassandra.query import named_tuple_factory
 
-from prometheus_client import Summary
+from prometheus_client import Histogram
 
 
 PROMETHEUS_METRICS_PREFIX = 'scyllacache'
@@ -33,19 +33,19 @@ class Cache(object):
 
         self.query_insert = self.session.prepare(self.query_insert_tpl.format(table=self.table))
 
-        self.cache_latency = Summary(
+        self.cache_latency = Histogram(
             '{prefix}_cache_latency_seconds'.format(prefix=self.metrics_prefix),
             'Cache read/write latency (seconds)', ['op'])
         self.cache_get_latency = self.cache_latency.labels('get')
         self.cache_put_latency = self.cache_latency.labels('put')
 
-        self.pickling_latency = Summary(
+        self.pickling_latency = Histogram(
             '{prefix}_pickle_latency_seconds'.format(prefix=self.metrics_prefix),
             'Pickling latency (seconds)', ['op'])
         self.pickle_latency = self.pickling_latency.labels('pickle')
         self.unpickle_latency = self.pickling_latency.labels('unpickle')
 
-        self.backend_latency = Summary(
+        self.backend_latency = Histogram(
             '{prefix}_backend_latency_seconds'.format(prefix=self.metrics_prefix),
             'Backend read/write request latency (seconds)', ['op'])
         self.backend_read_latency = self.backend_latency.labels('read')
